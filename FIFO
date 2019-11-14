@@ -1,0 +1,93 @@
+#include<bits/stdc++.h>
+#define endl '\n'
+#define mem(a) memset(a,0,sizeof(a))
+#define Kurisu 1
+#define debug cout<<1<<endl;
+typedef long long ll;
+using namespace std;
+const int N=2e5+5;
+const int mod=1e9+7;
+# define TRUE 1
+# define FALSE 0
+# define INVALID -1
+# define null 0
+
+# define total_instruction 320
+# define total_vp 32
+# define clear_period 50
+
+typedef struct{
+    int pn,pfn,counter,time;
+}pl_type;
+pl_type pl[total_vp];
+struct pfc_struct{
+    int pn,pfn;
+    struct pfc_struct *next;
+};//pn为页号，pfn为面号，counter为一个周期内访问该页面次数，time为访问时间
+typedef struct pfc_struct pfc_type;
+pfc_type pfc[total_vp],*freepf_head,*busypf_head,*busypf_tail;
+
+int disaffect;//页面失效次数
+int a[total_instruction];//指令流数据组
+int page[total_instruction];//每条指令所属页号
+int offset[total_instruction];//每页装入10条指令后取模运算页号偏移值
+
+void initialize(int n);
+void FIFO(int n);
+void LRU();
+
+int main()
+{
+    int S,i,j;
+    srand(getpid()*10);
+    S=(float)319*rand()/32767+1;//0-320
+    for (i=0;i<total_instruction;i+=2){
+        a[i]=S;
+        a[i+1]=a[i]+1;
+        a[i+2]=(float)a[i]*rand()/32767;//在前地址[0,m+1]中随机选取一条指令并执行，该指令的地址为m’
+        a[i+3]=a[i+2]+1;
+        S=(float)rand()*(318-a[i+2]/32767+a[i+2]+2);//?
+    }
+    for (i=0;i<total_instruction;i++){
+        page[i]=a[i]/10;
+        offset[i]=a[i]%10;
+    }
+    for (i=4;i<32;i++){
+        printf("%2d page frames",i);
+        FIFO(i);
+        //LRU(i);
+        printf("\n");
+    }
+}
+void FIFO(int total_pf)
+{
+   int i,j;
+   pfc_type *p,*t;
+   //initialize(total_pf);页面失效次数
+   busypf_head=busypf_tail=NULL;
+   for (i=0;i<total_instruction;i++){
+     if (pl[page[i]].pfn == INVALID)
+     {
+       disaffect+=1;
+       if (freepf_head == NULL)
+       {
+         p=busypf_head->next;
+         pl[busypf_head->pn].pfn=INVALID;
+         freepf_head->next=NULL;
+         busypf_head=p;
+       }
+     p=freepf_head->next;
+     freepf_head->next=NULL;
+     freepf_head->pn=page[i];
+     pl[page[i]].pfn=freepf_head->pfn;
+     if (busypf_tail==NULL)
+       busypf_head=busypf_tail=freepf_head;
+     else
+     {   busypf_tail->next=freepf_head;
+         busypf_tail=freepf_head;
+     }
+     freepf_head=p;
+   }
+  }
+    printf("FIFO:%6.4f",1-(float)disaffect/320);
+}
